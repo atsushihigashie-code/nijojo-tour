@@ -46,7 +46,11 @@
     border-radius: 14px;
     padding: 18px;
     margin-bottom: 16px;
-    flex: 0 0 auto;
+    flex: 0 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    max-height: 40vh;
   }
   #current-card .num {
     display: inline-block;
@@ -71,6 +75,14 @@
     font-size: 14px;
     line-height: 1.5;
     color: #ccc;
+  }
+  #current-card p.extra {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #333;
+    font-size: 12.5px;
+    color: #999;
+    font-style: italic;
   }
 
   #nav-buttons {
@@ -138,7 +150,7 @@
     <div class="num" id="current-num">—</div>
     <h2 id="current-title">Tap "次へ" to begin</h2>
     <div class="subtitle" id="current-subtitle"></div>
-    <p id="current-text"></p>
+    <div id="current-body"></div>
   </div>
 
   <div id="nav-buttons">
@@ -164,7 +176,7 @@
   const currentNumEl = document.getElementById('current-num');
   const currentTitleEl = document.getElementById('current-title');
   const currentSubtitleEl = document.getElementById('current-subtitle');
-  const currentTextEl = document.getElementById('current-text');
+  const currentBodyEl = document.getElementById('current-body');
   const prevBtn = document.getElementById('prev-btn');
   const nextBtn = document.getElementById('next-btn');
   const jumpGrid = document.getElementById('jump-grid');
@@ -191,13 +203,16 @@
       currentNumEl.textContent = '—';
       currentTitleEl.textContent = 'Tap "次へ" to begin';
       currentSubtitleEl.textContent = '';
-      currentTextEl.textContent = '';
+      currentBodyEl.innerHTML = '';
     } else {
       const stop = TOUR_CONTENT.find(s => s.n === current);
       currentNumEl.textContent = `STOP ${stop.n} / ${TOTAL}`;
       currentTitleEl.textContent = stop.title;
       currentSubtitleEl.textContent = stop.subtitle;
-      currentTextEl.textContent = stop.text;
+      currentBodyEl.innerHTML = `
+        <p>${stop.text}</p>
+        ${stop.extra ? `<p class="extra">${stop.extra}</p>` : ''}
+      `;
     }
 
     [...jumpGrid.children].forEach((el, i) => {
