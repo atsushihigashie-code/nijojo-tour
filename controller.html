@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Nijo Castle Tour — Controller</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%;
+    background: #0e0e0e;
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", sans-serif;
+  }
+  #app {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    padding: 16px;
+  }
+  header {
+    text-align: center;
+    margin-bottom: 12px;
+  }
+  header h1 {
+    font-size: 17px;
+    font-weight: 700;
+  }
+  header .sub {
+    font-size: 12px;
+    color: #888;
+    margin-top: 2px;
+  }
+  #status {
+    text-align: center;
+    font-size: 11px;
+    color: #666;
+    margin-bottom: 10px;
+  }
+  #status.connected { color: #4caf50; }
+  #status.error { color: #e53935; }
+
+  #current-card {
+    background: #1c1c1c;
+    border: 1px solid #333;
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 16px;
+    flex: 0 0 auto;
+  }
+  #current-card .num {
+    display: inline-block;
+    background: #d4a017;
+    color: #111;
+    font-weight: 700;
+    font-size: 13px;
+    border-radius: 20px;
+    padding: 3px 12px;
+    margin-bottom: 8px;
+  }
+  #current-card h2 {
+    font-size: 19px;
+    margin-bottom: 2px;
+  }
+  #current-card .subtitle {
+    font-size: 13px;
+    color: #999;
+    margin-bottom: 8px;
+  }
+  #current-card p {
+    font-size: 14px;
+    line-height: 1.5;
+    color: #ccc;
+  }
+
+  #nav-buttons {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .nav-btn {
+    flex: 1;
+    padding: 20px 0;
+    font-size: 18px;
+    font-weight: 700;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .nav-btn:active { transform: scale(0.97); }
+  #prev-btn {
+    background: #2a2a2a;
+    color: #fff;
+  }
+  #prev-btn:disabled {
+    opacity: 0.35;
+  }
+  #next-btn {
+    background: #d4a017;
+    color: #111;
+  }
+  #next-btn:disabled {
+    opacity: 0.35;
+  }
+
+  #jump-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+  }
+  .jump-btn {
+    aspect-ratio: 1;
+    border-radius: 10px;
+    border: 1px solid #333;
+    background: #1c1c1c;
+    color: #ccc;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .jump-btn.active {
+    background: #d4a017;
+    color: #111;
+    border-color: #d4a017;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>二条城 二の丸御殿ツアー</h1>
+    <div class="sub">Controller — Guide Screen</div>
+  </header>
+  <div id="status">connecting…</div>
+
+  <div id="current-card">
+    <div class="num" id="current-num">—</div>
+    <h2 id="current-title">Tap "次へ" to begin</h2>
+    <div class="subtitle" id="current-subtitle"></div>
+    <p id="current-text"></p>
+  </div>
+
+  <div id="nav-buttons">
+    <button id="prev-btn" class="nav-btn">← 前へ</button>
+    <button id="next-btn" class="nav-btn">次へ →</button>
+  </div>
+
+  <div id="jump-grid"></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="content.js"></script>
+<script src="firebase-config.js"></script>
+<script>
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+  const stateRef = db.ref(DB_PATH);
+
+  const statusEl = document.getElementById('status');
+  const currentNumEl = document.getElementById('current-num');
+  const currentTitleEl = document.getElementById('current-title');
+  const currentSubtitleEl = document.getElementById('current-subtitle');
+  const currentTextEl = document.getElementById('current-text');
+  const prevBtn = document.getElementById('prev-btn');
+  const nextBtn = document.getElementById('next-btn');
+  const jumpGrid = document.getElementById('jump-grid');
+
+  const TOTAL = TOUR_CONTENT.length;
+  let current = 0; // 0 = not started
+
+  function buildJumpGrid() {
+    jumpGrid.innerHTML = '';
+    TOUR_CONTENT.forEach(stop => {
+      const b = document.createElement('button');
+      b.className = 'jump-btn';
+      b.textContent = stop.n;
+      b.addEventListener('click', () => setCurrent(stop.n));
+      jumpGrid.appendChild(b);
+    });
+  }
+
+  function renderUI() {
+    prevBtn.disabled = current <= 1;
+    nextBtn.disabled = current >= TOTAL;
+
+    if (current === 0) {
+      currentNumEl.textContent = '—';
+      currentTitleEl.textContent = 'Tap "次へ" to begin';
+      currentSubtitleEl.textContent = '';
+      currentTextEl.textContent = '';
+    } else {
+      const stop = TOUR_CONTENT.find(s => s.n === current);
+      currentNumEl.textContent = `STOP ${stop.n} / ${TOTAL}`;
+      currentTitleEl.textContent = stop.title;
+      currentSubtitleEl.textContent = stop.subtitle;
+      currentTextEl.textContent = stop.text;
+    }
+
+    [...jumpGrid.children].forEach((el, i) => {
+      el.classList.toggle('active', TOUR_CONTENT[i].n === current);
+    });
+  }
+
+  function setCurrent(n) {
+    current = n;
+    renderUI();
+    stateRef.set({
+      current: current,
+      updatedAt: Date.now()
+    }).catch(err => {
+      statusEl.textContent = '同期エラー: ' + err.message;
+      statusEl.className = 'error';
+    });
+  }
+
+  nextBtn.addEventListener('click', () => {
+    if (current < TOTAL) setCurrent(current + 1);
+  });
+  prevBtn.addEventListener('click', () => {
+    if (current > 1) setCurrent(current - 1);
+  });
+
+  buildJumpGrid();
+  renderUI();
+
+  // Read initial state (in case controller reloads mid-tour)
+  stateRef.once('value').then(snap => {
+    const data = snap.val();
+    statusEl.textContent = '接続済み';
+    statusEl.className = 'connected';
+    if (data && data.current) {
+      current = data.current;
+      renderUI();
+    }
+  }).catch(err => {
+    statusEl.textContent = '接続エラー: ' + err.message;
+    statusEl.className = 'error';
+  });
+</script>
+</body>
+</html>
