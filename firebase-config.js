@@ -12,13 +12,14 @@
 // 5. Register the app (nickname e.g. "nijojo-tour-web") and copy the config object below
 
 const firebaseConfig = {
-  apiKey: "REPLACE_ME",
-  authDomain: "REPLACE_ME.firebaseapp.com",
-  databaseURL: "https://REPLACE_ME-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "REPLACE_ME",
-  storageBucket: "REPLACE_ME.appspot.com",
-  messagingSenderId: "REPLACE_ME",
-  appId: "REPLACE_ME"
+  apiKey: "AIzaSyCiuXt3jLmxatl2bHanvOkCymV6pmSjtyI",
+  authDomain: "nijojo-tour.firebaseapp.com",
+  databaseURL: "https://nijojo-tour-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "nijojo-tour",
+  storageBucket: "nijojo-tour.firebasestorage.app",
+  messagingSenderId: "57401388270",
+  appId: "1:57401388270:web:da637f16a248af0d7dd7ff",
+  measurementId: "G-0TEBYXKRTD"
 };
 
 // Realtime Database path used for this tour's sync state.
