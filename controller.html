@@ -154,7 +154,9 @@
 <script src="content.js"></script>
 <script src="firebase-config.js"></script>
 <script>
+  console.log('Firebase config loaded:', firebaseConfig);
   firebase.initializeApp(firebaseConfig);
+  console.log('Firebase app initialized');
   const db = firebase.database();
   const stateRef = db.ref(DB_PATH);
 

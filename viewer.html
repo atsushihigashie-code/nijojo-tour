@@ -123,9 +123,13 @@
 <script src="content.js"></script>
 <script src="firebase-config.js"></script>
 <script>
+  console.log('Firebase config loaded:', firebaseConfig);
   firebase.initializeApp(firebaseConfig);
+  console.log('Firebase app initialized');
   const db = firebase.database();
+  console.log('Database instance:', db);
   const stateRef = db.ref(DB_PATH);
+  console.log('State ref path:', DB_PATH);
 
   const mapImg = document.getElementById('map-img');
   const badgesLayer = document.getElementById('badges');
@@ -178,15 +182,17 @@
   }
   window.addEventListener('resize', buildBadges);
 
+  console.log('Attaching listener to', DB_PATH);
   stateRef.on('value', (snap) => {
     const data = snap.val();
+    console.log('Received data:', data);
     statusEl.textContent = 'connected';
     if (data && data.current) {
       showStop(data.current);
     }
   }, (err) => {
-    statusEl.textContent = 'connection error';
-    console.error(err);
+    statusEl.textContent = 'connection error: ' + err.message;
+    console.error('Firebase error:', err);
   });
 </script>
 </body>
