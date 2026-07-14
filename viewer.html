@@ -98,6 +98,14 @@
     line-height: 1.6;
     color: #eee;
   }
+  #info p.extra {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #333;
+    font-size: 13px;
+    color: #b8b8b8;
+    font-style: italic;
+  }
   #status {
     position: absolute;
     top: 10px;
@@ -201,6 +209,7 @@
       <h1>${stop.title}</h1>
       <div class="subtitle">${stop.subtitle}</div>
       <p>${stop.text}</p>
+      ${stop.extra ? `<p class="extra">${stop.extra}</p>` : ''}
     `;
 
     clearTimeout(window.__zoomTimer1);
