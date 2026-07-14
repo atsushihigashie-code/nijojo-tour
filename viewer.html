@@ -20,51 +20,60 @@
   }
   #map-wrap {
     position: relative;
-    flex: 1 1 auto;
-    min-height: 0;
+    flex: 0 0 auto;
+    height: 38vh;
+    min-height: 180px;
     background: #1a1a1a;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     overflow: hidden;
+    transition: height 0.3s ease;
+  }
+  #map-inner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
+    transition: transform 1.1s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
   }
   #map-img {
-    max-width: 100%;
-    max-height: 100%;
     display: block;
+    width: 1179px;
+    max-width: none;
   }
   .badge {
     position: absolute;
-    width: 34px;
-    height: 34px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
     background: rgba(43, 108, 176, 0.55);
-    border: 2px solid rgba(255,255,255,0.6);
+    border: 1.5px solid rgba(255,255,255,0.6);
     color: #fff;
     font-weight: 700;
-    font-size: 14px;
+    font-size: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
     transform: translate(-50%, -50%);
-    transition: all 0.35s ease;
+    transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1);
     pointer-events: none;
   }
   .badge.active {
-    width: 56px;
-    height: 56px;
+    width: 30px;
+    height: 30px;
     background: #d4a017;
-    border: 3px solid #fff;
-    font-size: 22px;
-    box-shadow: 0 0 0 6px rgba(212,160,23,0.35), 0 0 24px rgba(212,160,23,0.8);
+    border: 2px solid #fff;
+    font-size: 13px;
+    box-shadow: 0 0 0 4px rgba(212,160,23,0.35), 0 0 16px rgba(212,160,23,0.8);
     z-index: 5;
   }
   #info {
-    flex: 0 0 auto;
+    flex: 1 1 auto;
+    min-height: 0;
     background: #181818;
     border-top: 1px solid #333;
     padding: 18px 22px 26px;
-    min-height: 130px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   #info .num {
     display: inline-block;
@@ -110,8 +119,10 @@
 <div id="app">
   <div id="map-wrap">
     <div id="status">connecting…</div>
-    <img id="map-img" src="nijo_official_map.png" alt="Nijo Castle Ninomaru Palace Map">
-    <div id="badges"></div>
+    <div id="map-inner">
+      <img id="map-img" src="nijo_official_map.png" alt="Nijo Castle Ninomaru Palace Map">
+      <div id="badges"></div>
+    </div>
   </div>
   <div id="info">
     <div id="waiting">Waiting for the guide to begin the tour…</div>
@@ -132,6 +143,8 @@
   console.log('State ref path:', DB_PATH);
 
   const mapImg = document.getElementById('map-img');
+  const mapInner = document.getElementById('map-inner');
+  const mapWrap = document.getElementById('map-wrap');
   const badgesLayer = document.getElementById('badges');
   const infoEl = document.getElementById('info');
   const statusEl = document.getElementById('status');
@@ -141,31 +154,38 @@
   function buildBadges() {
     badgesLayer.innerHTML = '';
     badgeEls = {};
-    const rect = mapImg.getBoundingClientRect();
-    const wrapRect = document.getElementById('map-wrap').getBoundingClientRect();
-    const offsetX = rect.left - wrapRect.left;
-    const offsetY = rect.top - wrapRect.top;
-    const scaleX = rect.width / MAP_NATIVE_WIDTH;
-    const scaleY = rect.height / MAP_NATIVE_HEIGHT;
-
     TOUR_CONTENT.forEach(stop => {
       const b = document.createElement('div');
       b.className = 'badge';
       b.textContent = stop.n;
-      b.style.left = (offsetX + stop.x * scaleX) + 'px';
-      b.style.top = (offsetY + stop.y * scaleY) + 'px';
+      b.style.left = stop.x + 'px';
+      b.style.top = stop.y + 'px';
       badgesLayer.appendChild(b);
       badgeEls[stop.n] = b;
     });
   }
 
+  // Zoom into the area around the active stop's badge.
+  const ZOOM = 2.8;
+  function zoomToStop(stop) {
+    const wrapRect = mapWrap.getBoundingClientRect();
+    const cx = wrapRect.width / 2;
+    const cy = wrapRect.height / 2;
+    const tx = cx - stop.x * ZOOM;
+    const ty = cy - stop.y * ZOOM;
+    mapInner.style.transform = `translate(${tx}px, ${ty}px) scale(${ZOOM})`;
+  }
+
   function showStop(n) {
     const stop = TOUR_CONTENT.find(s => s.n === n);
     if (!stop) return;
+    window.__currentStopActive = true;
 
     Object.entries(badgeEls).forEach(([num, el]) => {
       el.classList.toggle('active', Number(num) === n);
     });
+
+    zoomToStop(stop);
 
     infoEl.innerHTML = `
       <div class="num">STOP ${stop.n} / ${TOUR_CONTENT.length}</div>
@@ -175,12 +195,26 @@
     `;
   }
 
+  function fitToMap() {
+    const wrapRect = mapWrap.getBoundingClientRect();
+    const scale = Math.min(wrapRect.width / MAP_NATIVE_WIDTH, wrapRect.height / MAP_NATIVE_HEIGHT);
+    const tx = (wrapRect.width - MAP_NATIVE_WIDTH * scale) / 2;
+    const ty = (wrapRect.height - MAP_NATIVE_HEIGHT * scale) / 2;
+    mapInner.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+  }
+
   if (mapImg.complete) {
     buildBadges();
+    fitToMap();
   } else {
-    mapImg.addEventListener('load', buildBadges);
+    mapImg.addEventListener('load', () => {
+      buildBadges();
+      fitToMap();
+    });
   }
-  window.addEventListener('resize', buildBadges);
+  window.addEventListener('resize', () => {
+    if (!window.__currentStopActive) fitToMap();
+  });
 
   console.log('Attaching listener to', DB_PATH);
   stateRef.on('value', (snap) => {
